@@ -1,154 +1,117 @@
-# __NVIDIA_OSS__ Standard Repo Template
+# ONC RPC Ping Utility
 
-This README file is from the NVIDIA_OSS standard repo template of [PLC-OSS-Template](https://github.com/NVIDIA-GitHub-Management/PLC-OSS-Template?tab=readme-ov-file). It provides a list of files in the PLC-OSS-Template and guidelines on how to use (clone and customize) them.
+## Intro
 
-**Upon completing the customization for the project repo, the repo admin should replace this README template with the project specific README file.**
+The `oncrpc-ping` is a utility designed to measure actual ONC RPC(Sun RPC) service latency over both TCP and UDP transport protocols. By bypassing the RPC Bind service, the utility avoids unnecessary service inquiries, ensuring accurate, end-to-end latency measurements.
 
-- Files (org-wide templates in the NVIDIA .github org repo; per-repo overrides allowed) in [PLC-OSS-Template](https://github.com/NVIDIA-GitHub-Management/PLC-OSS-Template?tab=readme-ov-file)
+## Dependency
 
-   - Root 
-     - README.md skeleton (CTA + Quickstart + Support/Security/Governance links) 
-     - LICENSE (Apache 2.0 by default)
-        - For other licenses, see the [Confluence page](https://confluence.nvidia.com/pages/viewpage.action?pageId=788418816) for other licenses
-        - CLA.md file (delete if not using MIT or BSD licenses)
-     - CODE_OF_CONDUCT.md 
-     - SECURITY.md (vuln reporting path) 
-     - CONTRIBUTING.md (base; repo can add specifics)
-     - SUPPORT.md (Support levels/channels)
-     - GOVERNANCE.md (baseline; repo may extend)
-     - CITATION.md (for projects that need citation)
+| Library | Purpose |
+|---|---|
+| [libtirpc](https://git.linux-nfs.org/?p=steved/libtirpc.git) | ONC RPC client API |
 
-   - .github/ 
-     - ISSUE_TEMPLATE/ (<https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository>)
-       - bug.yml, feature.yml, task.yml, config.yml 
-     - PULL_REQUEST_TEMPLATE.md (<https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository>)
-     - workflows/
-     - Note: workflow-templates/ for starter workflows should live in the org-level .github repo, not per-repo
+## Measurement Methodology
 
-   - Repo-specific (not org-template, maintained by the team)
-     - CODEOWNERS (place at .github/CODEOWNERS or repo root)
-     - CHANGELOG.md (or RELEASE.md) 
-     - ROADMAP.md 
-     - MAINTAINERS.md 
-     - NOTICE or THIRD_PARTY_NOTICES / THIRD_PARTY_LICENSES (dependency specific)
-     - Build/package files (CMake, pyproject, Dockerfile, etc.)
+ONC RPC specifications define a standardized 'NULL' procedure (procedure number 0). This 'do-nothing' operation is supported by all ONC RPC servers and is ideal for service latency measurement.
 
-   - Recommended structure and hygiene
-     - docs/
-     - examples/
-     - tests/
-     - scripts/
-     - Container/dev env: Dockerfile, docker/, .devcontainer/ (optional)
-     - Build/package (language-specific):
-       - Python: pyproject.toml, setup.cfg/setup.py, requirements.txt, environment.yml
-       - C++: CMakeLists.txt, cmake/, vcpkg.json
-     - Repo hygiene: .gitignore, .gitattributes, .editorconfig, .pre-commit-config.yaml, .clang-format
+## Measurement Workflow
 
+To capture pure client-server RPC latency, the program utilizes low-level ONC RPC interfaces to control client behavior. The measurement lifecycle is as follows:
 
-## Usage of [PLC-OSS-Template](https://github.com/NVIDIA-GitHub-Management/PLC-OSS-Template?tab=readme-ov-file) for NEW NVIDIA OSS repos
+- Create a network socket configured for the specified transport (TCP/UDP).
+- Initialize an ONC RPC client.
+- Execute a `connect()` call.
+- Issue an ONC RPC NULL request to the remote server and record the latency.
+- Terminate the ONC RPC client connection.
 
-1. Clone the [PLC-OSS-Template](https://github.com/NVIDIA-GitHub-Management/PLC-OSS-Template?tab=readme-ov-file)
-2. Find/replace all in the clone of `___PROJECT___` and `__PROJECT_NAME__` with the name of the specific project.
-3. Inspect all files to make sure all replacements work and update text as needed
+The following simplified data flow graph shows where the program measures the latency (the box section):
 
-
-**What you can reuse immediately**
-- CODE_OF_CONDUCT.md
-- SECURITY.md
-- CONTRIBUTING.md (base)
-- .github/ISSUE_TEMPLATE/.yml (bug/feature/task + config.yml)
-- .github/PULL_REQUEST_TEMPLATE.md
-- Reusable workflows 
-
-**What you must customize per repo**
-- README.md: copy the skeleton and fill in product-specific details (Quickstart, Requirements, Usage, Support level, links)
-- LICENSE: check file is correct, update year, consult Confluence for alternatives https://confluence.nvidia.com/pages/viewpage.action?pageId=788418816, add CLA.md only if your license/process requires it
-- CODEOWNERS: replace <TEAM> with your GitHub team handle(s). Place at .github/CODEOWNERS (or repo root)
-- MAINTAINERS.md: list maintainers names/roles, escalation path
-- CHANGELOG.md (or RELEASE.md): track releases/changes
-- SUPPORT.md: Update for your project
-- ROADMAP.md (optional): upcoming milestones
-- NOTICE / THIRD_PARTY_NOTICES (if you ship third‑party content)
-- Build/package files (CMake/pyproject/Dockerfile/etc.), tests/, docs/, examples/, scripts/ as appropriate
-- Workflows: Edit if you need custom behavior 
-
-
-4. Change git origin to point to new repo and push
-5. Remove the line break below and everything above it
-
-## Usage for existing NVIDIA OSS repos
-
-1. Follow the steps above, but add the files to your existing repo and merge
-
-<!-- REMOVE THE LINE BELOW AND EVERYTHING ABOVE -->
------------------------------------------
-# [Project Title]
-One-sentence value proposition for users. Who is it for, and why it matters. 
-
-# Overview
-What the project does? Why the project is useful?
-Provide a brief overview, highlighting key features or problem-solving capabilities.
-
-# Getting Started
-Guide users on how they can get started with the project. This should include basic installation step, quick-start examples 
-```bash
-# Option A: Package manager (pip/conda/npm/etc.)
-<copy-paste install>
-
-# Option B: Container
-docker run <image> <args>
-
-# Verify (hello world)
-<one-liner or ~10-line example>
 ```
-# Requirements
-Include a list of pre-requisites. 
-- OS/Arch: <summary or link to full matrix>
-- Runtime/Compiler: <versions>
-- GPU/Drivers (if applicable): CUDA <ver>, driver <ver>, etc.
-
-# Usage
-```bash
-# Minimal runnable snippet (≤20 lines)
-<code>
+      Client                                        Server
+         |                                             |
+         |  ------- Connect Request / Handshake ---->  |
+         |  <--------- Handshake Response ------------ |
+         |                                             |
+       ---------------------------------------------------  
+      |  |                                             |  |
+      |  |  --- ONC RPC NULL PROC (Ping Request) ----> |  |
+      |  |  <--------- ONC RPC NULL PROC Reply ------- |  |
+      |  |                                             |  |
+       ---------------------------------------------------
+         |                                             |
+         |  --------- Destroy ONC RPC Client --------> |
+         |  <--------- Close Connection -------------- |
+         |                                             |
 ```
-- More examples/tutorials: <link>
-- API reference: <link>
 
-# Performance (Optional)
-Summary of benchmarks; link to detailed results and hardware used.
+## Compilation
 
-## Releases & Roadmap 
-- Releases/Changelog: <link>
-- (Optional) Next milestones or link to `ROADMAP.md`.
-  
-# Contribution Guidelines
-- Start here: `CONTRIBUTING.md`
-- Code of Conduct: `CODE_OF_CONDUCT.md`
-- Development quickstart (build/test):
-```bash
-<clone> && <deps> && <build/test>
 ```
-## Governance & Maintainers
-- Governance: `GOVERNANCE.md`
-- Maintainers: <team/handles>
-- Labeling/triage policy: <link>
+$ make
+gcc -g -Wall -Wextra -Wpedantic -Wconversion -Wdouble-promotion -Wunused -Wshadow -Wsign-conversion -fsanitize=undefined -I/usr/include/tirpc -c oncrpc-ping.c -o oncrpc-ping.o
+gcc -g -Wall -Wextra -Wpedantic -Wconversion -Wdouble-promotion -Wunused -Wshadow -Wsign-conversion -fsanitize=undefined oncrpc-ping.o -o oncrpc-ping -lm -ltirpc
+```
 
-## Security
-- Vulnerability disclosure: `SECURITY.md`
-- Do not file public issues for security reports.
+## Usage
 
-## Support
-- Level: <Experimental | Maintained | Stable>
-- How to get help: Issues/Discussions/<channel link>
-- Response expectations (if any).
+```
+$ ./oncrpc-ping -h
+ONC RPC Ping - Version 1.0.0
+usage: oncrpc-ping -n|--hostname <target hostname / IP>
+                   -P|--port <port number>
+                   -p|--program-number <RPC program number>
+                   -v|--program-version <RPC program version>
+                   -T|--transport tcp|udp
+                   [-i|--interval <second(s)>] default: 1 second
+                   [-t|--rpc-timeout <second(s)>] default: 10 seconds
+                   [-c|--connect-timeout <second(s)>] default: 5 seconds
+                   [-C|--count <count number>]
+                   [-h|--help]
+```
 
-# Community
-Provide the channel for community communications.
+- `-n` or `--hostname <hostname / IP>`: target hostname or IP address of the RPC server
 
-# References
-Provide a list of related references
+- `-P` or `--port <port>`: port number the RPC server is listening on
 
-# License
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
-- License: <link>
+- `-p` or `--program-number <number>`: ONC RPC program number registered by the target service
+
+- `-v` or `--program-version <version>`: ONC RPC program version number of the target service
+
+- `-T` or `--transport <tcp|udp>`: transport protocol
+
+- `-i` or `--interval <seconds>`: interval in whole seconds between successive RPC NULL calls
+
+- `-t` or `--rpc-timeout <seconds>`: timeout in whole seconds for each individual RPC NULL call
+
+- `-c` or `--connect-timeout <seconds>`: timeout in whole seconds for the initial `connect()` call
+
+- `-C` or `--count <number>`: number of RPC NULL calls to send before printing statistics and exiting. if omitted, the program runs indefinitely until interrupted with `Ctrl+C` (SIGINT), at which point it prints final statistics and exits cleanly
+
+- `-h` or `--help`: print usage information and exit
+
+## ChangeLog
+
+```
+[07/24/2026] 1.0.0 - initial commit
+```
+
+## Demo
+
+```
+$ ./oncrpc-ping -n 10.x.x.x -P 2049 -p 100003 -v 3 -T tcp -C 5
+INFO: socket file descriptor number: 3
+index 1 from 10.x.x.x: RPC program=100003 version=3 time=0.084 ms | XID=0x948041C3
+index 2 from 10.x.x.x: RPC program=100003 version=3 time=0.093 ms | XID=0x938041C3
+index 3 from 10.x.x.x: RPC program=100003 version=3 time=0.070 ms | XID=0x928041C3
+index 4 from 10.x.x.x: RPC program=100003 version=3 time=0.104 ms | XID=0x918041C3
+index 5 from 10.x.x.x: RPC program=100003 version=3 time=0.149 ms | XID=0x908041C3
+
+--- 10.x.x.x ONC RPC ping statistics ---
+rtt min/avg/max/stddev = 0.070/0.100/0.149/0.027 ms
+```
+
+## Reference
+
+[libtirpc](https://git.linux-nfs.org/?p=steved/libtirpc.git)
+
+[ONC+ Developer's Guide](https://docs.oracle.com/cd/E18752_01/html/816-1435/)
