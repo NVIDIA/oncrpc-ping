@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <rpc/rpc.h>
 
-#define VERSION "1.0.0"
+#define VERSION "1.1.0"
 
 /* define usage function */
 static void usage(void) {
@@ -451,11 +451,20 @@ int main(int argc, char *argv[]) {
         }
 
         /* handle SIGINT signal */
-        if (pselect_ret < 0 && errno == EINTR) {
-            if (break_flag > 0) {
-                fprintf(stderr, "WARNING: SIGINT triggered\n");
-                goto error_handler;
+        if (pselect_ret < 0) {
+            if (errno == EINTR) {
+                if (break_flag > 0) {
+                    fprintf(stderr, "WARNING: SIGINT triggered\n");
+                    goto error_handler;
+                }
+
+                close(sockfd);
+                sockfd = -1;
+                continue;
             }
+
+            fprintf(stderr, "ERROR: failed to call pselect(): %s\n", strerror(errno));
+            goto error_handler;
         }
 
         /* check socket fd to determine if error occurs */
@@ -665,6 +674,7 @@ int main(int argc, char *argv[]) {
     /* clean up */
     freeaddrinfo(result);
     (void) CLNT_DESTROY (client);
+    close(sockfd);
 
     exit(EXIT_SUCCESS);
 
@@ -675,10 +685,10 @@ error_handler:
 
     if (client != NULL) {
         (void) CLNT_DESTROY (client);
-    } else {
-        if (sockfd >= 0) {
-            close(sockfd);
-        }
+    }
+
+    if (sockfd >= 0) {
+        close(sockfd);
     }
 
     exit(EXIT_FAILURE);
