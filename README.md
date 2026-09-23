@@ -56,7 +56,7 @@ gcc -g -Wall -Wextra -Wpedantic -Wconversion -Wdouble-promotion -Wunused -Wshado
 
 ```
 $ ./oncrpc-ping -h
-ONC RPC Ping - Version 1.0.0
+ONC RPC Ping - Version 1.1.0
 usage: oncrpc-ping -n|--hostname <target hostname / IP>
                    -P|--port <port number>
                    -p|--program-number <RPC program number>
@@ -93,6 +93,8 @@ usage: oncrpc-ping -n|--hostname <target hostname / IP>
 
 ```
 [07/24/2026] 1.0.0 - initial commit
+
+[09/23/2026] 1.1.0 - enhance pselect() handling on errors
 ```
 
 ## Demo
